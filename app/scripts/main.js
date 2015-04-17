@@ -1,4 +1,29 @@
 var labelType, useGradients, nativeTextSupport, animate;
+/*
+
+
+Требования к визуализации навигационного меню
+
+Внешний вид и смена приведены в видеофайле и в векторном файле
+
+1.Текст
+Основой шрифт названий разделов -  Open Sans Light,   цвет rgb(90, 93, 90),
+Шрифт активного выбранного раздела -  Open Sans Regular цвет rgb(255, 255, 255),
+Выравнивание всех текстов центральное как по вертикали так и по горизонтали
+Максимальное количество текстовых символов
+1-й уровень – одна строка 15 символов
+2-й уровень – максимально 2 строки по 11 символов
+3-й уровень - максимально 3 строки по 15 символов
+  Размеры шрифтов 15 px межстрочные интервалы 15 px
+Смена активного раздела присходит через изменение прозрачности длитильность затухания и появления около 0,15 сек.
+При смене фокуса происходит изменение прозрачности на 25%
+При выборе раздела в случае, если он не выбирался ранее, следующий уровень занимает центральную позицию относительно линии выбора, и в нем нет перевыбранного раздела, в случае если это второй уровень, третитий уровень не отображаеться.
+  При смене подуровня второй уровень вращаеться по часовой стрелке, третий против часовой.
+Смена цветов интерфейса 1-го уровня происходит по цветовому кругу путем смещения параметра HUE на количество градусов равное разнице секторов.  Время смены цветов около 0.15 сек. 2-й и 3-й уровеь меняються вращеним старые скрываються, новые появляться из за границ экранной области.
+Все автоматические движения происходят с синусоидальным ускорением и замедлением.
+
+
+*/
 
 (function() {
   var ua = navigator.userAgent,
@@ -27,7 +52,12 @@ var Log = {
 
 function init(){
   //init data
-  var json = {
+
+ console.log($jit.util.extend({b: 11}, {a: 231}))
+
+
+
+  var json = { //json tree structure.
     "children": [
        {
          "children": [],
@@ -96,23 +126,48 @@ function init(){
      "id": "Source",
      "name": "Source"
    };
-    //end
+    $jit.json.eachLevel(json, 0, 3, function(node, depth) {
+    console.log(node.id + ' ' + depth);
+});
+
     //init Sunburst
-    var sb = new $jit.Sunburst({
+    window.sb = new $jit.Sunburst({
         //id container for the visualization
         injectInto: 'infovis',
         //Distance between levels
         levelDistance: 80,
         //Change node and edge styles such as
         //color, width and dimensions.
+
         Node: {
           overridable: true,
-          type: useGradients ? 'gradient-multipie' : 'multipie'
+          type: useGradients ? 'gradient-multipie' : 'multipie',
         },
+
+        Fx: {
+          fps:40,
+          duration: 2500,
+          transition: $jit.Trans.Quart.easeInOut,
+          clearCanvas: true
+        },
+        /**/
+
         //Select canvas labels
         //'HTML', 'SVG' and 'Native' are possible options
         Label: {
-          type: labelType
+          type: labelType,
+          overridable: false,
+          style: ' ',
+          size: 10,
+          family: 'sans-serif',
+          textBaseline: 'alphabetic',
+          color: '#fff'
+        },
+
+        Navigation: {
+          enable: true,
+          panning: 'avoid nodes',
+          zooming: 20
         },
         //Change styles when hovering and clicking nodes
         NodeStyles: {
@@ -124,8 +179,9 @@ function init(){
           },
           stylesHover: {
             dim: 30,
-            'color': '#76bf94'
-          }
+            'color': '#ff0000'
+          },
+          duration: 600
         },
         //Add tooltips
         Tips: {
@@ -152,14 +208,47 @@ function init(){
             }
             $jit.id('inner-details').innerHTML = html;
             //hide tip
-            sb.tips.hide();
+            //sb.tips.hide();
             //rotate
+
             sb.rotate(node, animate? 'animate' : 'replot', {
               duration: 1000,
               transition: $jit.Trans.Quart.easeInOut
             });
+
+            /*
+
+
+            */
           },
+          onMouseEnter: function(node, eventInfo, e) {
+            sb.canvas.getElement().style.cursor = 'pointer';
+
+          },
+          onMouseLeave: function(node, eventInfo, e) {
+            sb.canvas.getElement().style.cursor = '';
+            console.log('onMouseLeave');
+          }
+
+
         },
+
+        //controllers
+        onBeforePlotNode: function(node) {
+        },
+        onBeforePlotLine: function(adj) {
+          if(adj.nodeFrom.selected && adj.nodeTo.selected) {
+            adj.setData('color', 'pink');
+          } else {
+            adj.removeData('color');
+          }
+        },
+        onAfterCompute: function() {
+          alert("computed!");
+        }
+
+
+
 
    });
     //load JSON data.
