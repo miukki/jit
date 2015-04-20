@@ -45,7 +45,7 @@ var Log = {
   write: function(text){
     if (!this.elem) this.elem = document.getElementById('log');
     this.elem.innerHTML = text;
-    //this.elem.style.left = (500 - this.elem.offsetWidth / 2) + 'px';
+    this.elem.style.left = (500 - this.elem.offsetWidth / 2) + 'px';
   }
 };
 
@@ -53,8 +53,23 @@ var Log = {
 function init(){
   //init data
 
- console.log($jit.util.extend({b: 11}, {a: 231}))
 
+$.ajax({
+  url: "http://24nc.ru/index.php?route=content/category/getcategories&category_id=242",
+  beforeSend: function( xhr ) {
+    //xhr.overrideMimeType( "text/plain; charset=x-user-defined" );
+  },
+  contentType:'application/javascript; charset=UTF-8',
+  //dataType: 'jsonp',
+  type: 'POST',
+  crossDomain: true,
+//  scriptCharset: 'jsonp'
+}).done(function( data ) {
+
+      console.log( "Sample of data:", JSON.parse(data));
+  });
+
+ console.log($jit.util.extend({b: 11}, {a: 231}))
 
 
   var json = { //json tree structure.
@@ -62,14 +77,12 @@ function init(){
        {
          "children": [],
          "data": {
-           "description": "content",
-           "$color": "#AEA9F8",
+           "description": "content1",
            "days": 2,
-           "$angularWidth": 1,
-           "size": 1
+           "$lineWidth": 3
          },
-         "id": "Source/Yslygi",
-         "name": "Yslygi"
+         "id": "1",
+         "name": "title1"
        },
        {
          "children": [],
@@ -77,11 +90,10 @@ function init(){
            "description": "content",
            "$color": "#AEA9F8",
            "days": 3,
-           "$angularWidth": 1,
-           "size": 1
+           "$lineWidth": 3
          },
-         "id": "Source/Core",
-         "name": "Tovari"
+         "id": "2",
+         "name": "title2"
        },
        {
          "children": [],
@@ -89,11 +101,10 @@ function init(){
            "description": "content",
            "$color": "#AEA9F8",
            "days": 1,
-           "$angularWidth": 1,
-           "size": 1
+           "$lineWidth": 3
          },
-         "id": "Source/Extras",
-         "name": "Gosyslygi"
+         "id": "3",
+         "name": "title3"
        },
        {
          "children": [],
@@ -101,11 +112,10 @@ function init(){
            "description": "Animated TreeMaps",
            "$color": "#B2ABF4",
            "days": 3,
-           "$angularWidth": 1,
-           "size": 1
+           "$lineWidth": 3
          },
-         "id": "Source/Graph",
-         "name": "Obrazovanie"
+         "id": "4",
+         "name": "title4"
        },
        {
          "children": [],
@@ -113,11 +123,10 @@ function init(){
            "description": "Animated TreeMaps",
            "$color": "#B2ABF4",
            "days": 3,
-           "$angularWidth": 1,
-           "size": 1
+           "$lineWidth": 3
          },
-         "id": "Source/Layouts",
-         "name": "Layouts"
+         "id": "5",
+         "name": "title5"
        }
      ],
      "data": {
@@ -136,13 +145,24 @@ function init(){
         injectInto: 'infovis',
         //Distance between levels
         levelDistance: 80,
+        interpolation: 'polar',
         //Change node and edge styles such as
         //color, width and dimensions.
+        Edge: {
+          overridable: true,
+          type: 'none',
+          dim: 35,
+          lineWidth: 30
+        },
 
         Node: {
           overridable: true,
           type: useGradients ? 'gradient-multipie' : 'multipie',
+          strokeStyle: '#fff',
+          color: "#AEA9F8",
+          CanvasStyles: {shadowColor: '#ccc',shadowBlur: 10, strokeStyle: '#fff' },
         },
+
 
         Fx: {
           fps:40,
@@ -155,19 +175,18 @@ function init(){
         //Select canvas labels
         //'HTML', 'SVG' and 'Native' are possible options
         Label: {
-          type: labelType,
-          overridable: false,
+          type: nativeTextSupport? 'Native' : 'SVG',
+          overridable: true,
           style: ' ',
           size: 10,
           family: 'sans-serif',
-          textBaseline: 'alphabetic',
           color: '#fff'
         },
 
         Navigation: {
-          enable: true,
+          enable: false,
           panning: 'avoid nodes',
-          zooming: 20
+          zooming: 2
         },
         //Change styles when hovering and clicking nodes
         NodeStyles: {
@@ -187,7 +206,17 @@ function init(){
         Tips: {
           enable: true,
           onShow: function(tip, node) {
+
+          var html = "<div class=\"tip-title\">" + node.name + "</div>";
+          var data = node.data;
+          if("days" in data) {
+           html += "<b>Last modified:</b> " + data.days + " days ago";
           }
+          if("size" in data) {
+           html += "<br /><b>File size:</b> " + Math.round(data.size / 1024) + "KB";
+          }
+          tip.innerHTML = html;
+                   }
         },
         //implement event handlers
         Events: {
@@ -238,17 +267,47 @@ function init(){
         },
         onBeforePlotLine: function(adj) {
           if(adj.nodeFrom.selected && adj.nodeTo.selected) {
-            adj.setData('color', 'pink');
+            adj.data.$lineWidth = 10;
           } else {
-            adj.removeData('color');
+            delete adj.data.$lineWidth;
           }
         },
         onAfterCompute: function() {
           alert("computed!");
+        },
+
+        onPlaceLabel: function(domElement, node){
+          var labels = sb.config.Label.type;
+
+          if (labels === 'SVG') {
+            var fch = domElement.firstChild;
+            var style = fch.style;
+            style.display = '';
+            style.cursor = 'pointer';
+            style.fontSize = "0.8em";
+            fch.setAttribute('fill', "#fff");
+          } else if (labels === 'HTML') {
+            var style = domElement.style;
+            style.display = '';
+            style.cursor = 'pointer';
+            style.fontSize = "0.8em";
+            style.color = "#ddd";
+            var left = parseInt(style.left);
+            var w = domElement.offsetWidth;
+            style.left = (left - w / 2) + 'px';
+          }
+
+        },
+
+        onCreateLabel: function(domElement, node){
+          var labels = sb.config.Label.type,
+          aw = node.getData('angularWidth');
+          if (labels === 'HTML' && (node._depth < 2 || aw > 2000)) {
+            domElement.innerHTML = node.name;
+          } else if (labels === 'SVG' && (node._depth < 2 || aw > 2000)) {
+            domElement.firstChild.appendChild(document.createTextNode(node.name));
+          }
         }
-
-
-
 
    });
     //load JSON data.
